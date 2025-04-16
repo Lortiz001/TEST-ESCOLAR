@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chismografía Interactiva</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body class="bg-light">
+    <div class="container py-5">
+        <h1 class="text-center text-primary animate__animated animate__fadeInDown">TE PARECES A..</h1>
+
+        <div id="formulario" class="mt-4">
+            <div class="mb-3">
+                <label class="form-label">Nombre:</label>
+                <input type="text" id="nombre" class="form-control">
+            </div>
+            <div class="mb-3">
+                <label class="form-label">Día de nacimiento (día):</label>
+                <input type="text" id="dia_nacimiento" class="form-control" placeholder="Ejemplo: 15">
+            </div>
+            <div class="mb-3">
+                <label class="form-label">Mes de nacimiento (mes):</label>
+                <input type="text" id="mes_nacimiento" class="form-control" placeholder="Ejemplo: 06">
+            </div>
+            <button class="btn btn-success" onclick="mostrarCuestionario()">Agregar al Test</button>
+        </div>
+
+        <h2 id="signoZodiaco" class="text-center text-info mt-3 animate__animated d-none"></h2>
+
+        <div id="cuestionario" class="mt-4 d-none">
+            <h3 class="text-center">Responde las siguientes preguntas:</h3>
+            <div id="preguntas"></div>
+            <button class="btn btn-primary mt-3" onclick="guardarRespuestas()">Guardar respuestas</button>
+        </div>
+
+        <button id="analizar" class="btn btn-warning mt-4 d-none" onclick="analizarGrupo()">Realizar análisis del grupo</button>
+        <div id="reporte" class="mt-4"></div>
+        <canvas id="graficaCategorias" class="mt-4 d-none"></canvas>
+    </div>
+
+    <script>
+        const preguntas = [
+    { pregunta: "¿Qué actividad disfrutas más?", opciones: ["Dibujar", "Explorar", "Tocar un instrumento", "Resolver acertijos", "Hacer amigos", "Pensar en el futuro"] },
+    { pregunta: "¿Qué materia prefieres?", opciones: ["Arte", "Educación Física", "Música", "Matemáticas", "Ciencias Sociales", "Ética"] },
+    { pregunta: "¿Cuál es tu lugar ideal para divertirte?", opciones: ["Museos", "Montañas", "Conciertos", "Biblioteca", "Fiestas", "El espacio"] },
+    { pregunta: "Si fueras un animal, ¿cuál serías?", opciones: ["Gato", "Águila", "Delfín", "Búho", "Perro", "Fénix"] },
+    { pregunta: "¿Qué tipo de películas te gustan más?", opciones: ["Animadas", "Aventura", "Musicales", "Documentales", "Comedias", "Ciencia ficción"] },
+    { pregunta: "¿Cómo te describes en grupo?", opciones: ["Creativo", "Atrevido", "Expresivo", "Analítico", "Sociable", "Inspirador"] },
+    { pregunta: "¿Qué prefieres hacer en tu tiempo libre?", opciones: ["Pintar", "Explorar la ciudad", "Escuchar música", "Leer", "Salir con amigos", "Planear el futuro"] },
+    { pregunta: "Si pudieras aprender algo nuevo, ¿qué sería?", opciones: ["Diseño gráfico", "Escalar montañas", "Tocar un instrumento", "Resolver acertijos", "Psicología", "Astronomía"] },
+    { pregunta: "¿Qué superpoder te gustaría tener?", opciones: ["Crear arte con la mente", "Volar", "Tener oído absoluto", "Leer mentes", "Hablar todos los idiomas", "Ver el futuro"] },
+    { pregunta: "¿Cómo te describen tus amigos?", opciones: ["Soñador", "Aventurero", "Talentoso", "Inteligente", "Divertido", "Visionario"] },
+    { pregunta: "Si pudieras viajar en el tiempo, ¿qué harías?", opciones: ["Ir al Renacimiento", "Explorar el futuro", "Ir a un concierto histórico", "Estudiar con grandes científicos", "Vivir en una sociedad utópica", "Fundar una civilización"] },
+    { pregunta: "¿Qué color te gusta más?", opciones: ["Morado", "Verde", "Azul", "Gris", "Rojo", "Dorado"] },
+    { pregunta: "Si fueras un objeto, ¿cuál serías?", opciones: ["Pincel", "Brújula", "Guitarra", "Libro", "Teléfono", "Telescopio"] },
+    { pregunta: "¿Qué te hace más feliz?", opciones: ["Crear algo nuevo", "Viajar", "Escuchar música", "Aprender", "Pasar tiempo con amigos", "Inspirar a otros"] },
+    { pregunta: "¿Cómo te gustaría ser recordado?", opciones: ["Como un gran artista", "Como un aventurero valiente", "Como un músico talentoso", "Como un genio", "Como una persona que unió a todos", "Como un líder del cambio"] },
+    { pregunta: "¿Qué prefieres en una fiesta?", opciones: ["Decorar", "Contar historias", "Bailar", "Jugar juegos mentales", "Hablar con todos", "Dar un discurso"] },
+    { pregunta: "¿Cuál es tu género de libro favorito?", opciones: ["Cómic", "Aventura", "Biografía de músicos", "Ciencia ficción", "Romance", "Ensayo político"] },
+    { pregunta: "Si fueras un personaje de caricatura, ¿quién serías?", opciones: ["Un dibujante", "Un explorador", "Un cantante", "Un inventor", "El alma de la fiesta", "Un visionario"] },
+    { pregunta: "¿Qué harías con un millón de dólares?", opciones: ["Invertir en arte", "Viajar", "Comprar instrumentos", "Investigar", "Hacer fiestas", "Salvar el mundo"] },
+    { pregunta: "¿Qué harías si fueras presidente por un día?", opciones: ["Fomentar la creatividad", "Llevar a todos de viaje", "Poner música en cada rincón", "Invertir en ciencia", "Organizar convivencias", "Crear un plan para el futuro"] }
+];
+
+        const respuestas = [];
+
+        const personajesMarvel = {
+    Amigable: {
+        nombre: "Ant-Man",
+        imagen: "https://github.com/Lortiz001/TEST-ESCOLAR/blob/main/ANT%20MAN.png?raw=true",
+        especial: "Es muy optimista y le cae bien a la gente. Siempre trata de ayudar a sus amigos y es simpático. Aprende de sus errores y sabe perdonar y ser perdonado.",
+        habilidades: "Sabe cómo trabajar en equipo y se comunica bien con otros (¡incluso con hormigas!). Se adapta fácilmente a diferentes grupos de personas."
+    },
+    Visionario: {
+        nombre: "Captain Marvel",
+        imagen: "https://github.com/Lortiz001/TEST-ESCOLAR/blob/main/CAPTAIN%20MARVEL.png?raw=true",
+        especial: "Tiene una idea muy clara de lo que es justo y siempre piensa en grande. Aprende de lo que le pasa y cree en un futuro mejor.",
+        habilidades: "Es una líder que inspira a otros con sus ideas y sabe tomar decisiones pensando en el futuro y en lo que es correcto."
+    },
+    Pensador: {
+        nombre: "Iron Man",
+        imagen: "https://github.com/Lortiz001/TEST-ESCOLAR/blob/main/IRON%20MAN.png?raw=true",
+        especial: "Es súper inteligente y siempre está pensando cómo mejorar las cosas. Aprende de sus errores y usa la tecnología para ayudar.",
+        habilidades: "Es un genio planeando estrategias, resolviendo problemas de tecnología y aprendiendo cosas nuevas muy rápido. ¡Siempre está un paso adelante!"
+    },
+    Creativo: {
+        nombre: "Spider-Man",
+        imagen: "https://github.com/Lortiz001/TEST-ESCOLAR/blob/main/SPIDER%20MAN.png?raw=true",
+        especial: "Es súper curioso y siempre busca cómo resolver problemas. Tiene un gran sentido del humor y hace lo correcto.",
+        habilidades: "Es un gran inventor y piensa muy rápido cómo pelear y salir de apuros. ¡Siempre se le ocurre algo!"
+    },
+    Artista: {
+        nombre: "Star-Lord",
+        imagen: "https://github.com/Lortiz001/TEST-ESCOLAR/blob/main/STAR%20LORD.png?raw=true",
+        especial: "Le gusta mucho la música y expresarse con su estilo. Es bueno improvisando y conectando con los demás.",
+        habilidades: "Tiene ideas originales y una forma única de hacer las cosas. ¡A veces convence a otros con su propio estilo!"
+    },
+    Aventurero: {
+        nombre: "Thor",
+        imagen: "https://github.com/Lortiz001/TEST-ESCOLAR/blob/main/THOR.png?raw=true",
+        especial: "Le encanta explorar y es muy valiente. Quiere proteger a sus amigos y no se rinde fácilmente.",
+        habilidades: "Es un líder cuando las cosas se ponen difíciles y sabe cómo adaptarse a lugares extraños y peligrosos."
+    }
+};
+
+        const categorias = ["Creativo", "Aventurero", "Artista", "Pensador", "Amigable", "Visionario"];
+
+        function calcularSigno(dia, mes) {
+            const signos = ["Capricornio", "Acuario", "Piscis", "Aries", "Tauro", "Géminis", "Cáncer", "Leo", "Virgo", "Libra", "Escorpio", "Sagitario"];
+            const fechas = [20, 19, 20, 20, 21, 21, 23, 23, 23, 23, 22, 21];
+            return dia < fechas[mes - 1] ? signos[(mes + 10) % 12] : signos[(mes - 1) % 12];
+        }
+
+        function mostrarCuestionario() {
+            const dia = parseInt(document.getElementById("dia_nacimiento").value);
+            const mes = parseInt(document.getElementById("mes_nacimiento").value);
+            const signo = calcularSigno(dia, mes);
+            const signoEl = document.getElementById("signoZodiaco");
+
+            signoEl.textContent = `Tu signo zodiacal es: ${signo}`;
+            signoEl.classList.remove("d-none", "animate__fadeOut");
+            signoEl.classList.add("animate__fadeIn");
+
+            document.getElementById("cuestionario").classList.remove("d-none");
+
+            let html = "";
+            preguntas.forEach((p, index) => {
+                html += `<div class='mb-3'><label>${p.pregunta}</label>`;
+                p.opciones.forEach(op => {
+                    html += `<div><input type='radio' name='p${index}' value='${op}'> ${op}</div>`;
+                });
+                html += "</div>";
+            });
+            document.getElementById("preguntas").innerHTML = html;
+        }
+
+        function contarCategoria(respuestasUsuario) {
+            const conteo = {
+                Creativo: 0,
+                Aventurero: 0,
+                Artista: 0,
+                Pensador: 0,
+                Amigable: 0,
+                Visionario: 0
+            };
+
+            respuestasUsuario.forEach((respuesta, i) => {
+                const opcionIndex = preguntas[i].opciones.indexOf(respuesta);
+                if (opcionIndex !== -1) {
+                    const categoria = categorias[opcionIndex];
+                    conteo[categoria]++;
+                }
+            });
+
+            let max = 0;
+            let categoriaDominante = "";
+            for (let cat in conteo) {
+                if (conteo[cat] > max) {
+                    max = conteo[cat];
+                    categoriaDominante = cat;
+                }
+            }
+
+            return categoriaDominante;
+        }
+
+        function guardarRespuestas() {
+    const respuestasUsuario = [];
+    let completo = true;
+
+    for (let i = 0; i < preguntas.length; i++) {
+        const seleccion = document.querySelector(`input[name='p${i}']:checked`);
+        if (seleccion) {
+            respuestasUsuario.push(seleccion.value);
+        } else {
+            completo = false;
+            break;
+        }
+    }
+
+    if (!completo) {
+        alert("Por favor, responde todas las preguntas.");
+        return;
+    }
+
+    const nombre = document.getElementById("nombre").value;
+    const dia = parseInt(document.getElementById("dia_nacimiento").value);
+    const mes = parseInt(document.getElementById("mes_nacimiento").value);
+    const signo = calcularSigno(dia, mes);
+    const categoria = contarCategoria(respuestasUsuario);
+    const personaje = personajesMarvel[categoria];
+
+    respuestas.push({ nombre, signo, categoria, personaje: personaje.nombre, respuestas: respuestasUsuario });
+
+    document.getElementById("reporte").innerHTML = `
+        <div class="card text-center animate__animated animate__fadeInUp mt-4">
+            <div class="card-body">
+                <h3 class="card-title text-success">¡Análisis completado!</h3>
+                <p><strong>Nombre:</strong> ${nombre}</p>
+                <p><strong>Signo Zodiacal:</strong> ${signo}</p>
+                <p><strong>Tu categoría es:</strong> ${categoria}</p>
+                <p><strong>Tu personaje Marvel es:</strong> ${personaje.nombre}</p>
+                <img src="${personaje.imagen}" alt="${personaje.nombre}" style="max-width:150px;" class="img-fluid mt-2 rounded">
+                <hr>
+                <p><strong>¿Qué lo hace especial?</strong><br>${personaje.especial}</p>
+                <p><strong>Habilidades geniales:</strong><br>${personaje.habilidades}</p>
+            </div>
+        </div>
+    `;
+
+    // Enviar a Google Sheets
+    fetch("https://script.google.com/macros/s/AKfycbxRQvRN485S34ibCKVLG_RGgtHys5NIG-WhO-70iLZWUeUoocQuRsOaE7QB5BR6yds/exec", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+            nombre,
+            signo,
+            categoria,
+            personaje: personaje.nombre,
+            respuestas: respuestasUsuario
+        })
+    })
+    .then(response => response.text())
+    .then(result => console.log("Datos guardados en Google Sheets:", result))
+    .catch(error => console.error("Error al guardar en Google Sheets:", error));
+
+    document.getElementById("cuestionario").classList.add("d-none");
+    document.getElementById("analizar").classList.remove("d-none");
+        }
+
+        function analizarGrupo() {
+            const conteoCategorias = {
+                Creativo: 0,
+                Aventurero: 0,
+                Artista: 0,
+                Pensador: 0,
+                Amigable: 0,
+                Visionario: 0
+            };
+
+            respuestas.forEach(participante => {
+                conteoCategorias[participante.categoria]++;
+            });
+
+            const colores = {
+                Creativo: "#FF6384",
+                Aventurero: "#36A2EB",
+                Artista: "#FFCE56",
+                Pensador: "#4BC0C0",
+                Amigable: "#9966FF",
+                Visionario: "#FF9F40"
+            };
+
+            const ctx = document.getElementById('graficaCategorias');
+            document.getElementById('graficaCategorias').classList.remove("d-none");
+
+            new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: Object.keys(conteoCategorias),
+                    datasets: [{
+                        label: 'Participantes por categoría',
+                        data: Object.values(conteoCategorias),
+                        backgroundColor: Object.keys(conteoCategorias).map(cat => colores[cat]),
+                        borderColor: Object.keys(conteoCategorias).map(cat => colores[cat]),
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: { stepSize: 1 }
+                        }
+                    }
+                }
+            });
+        }
+    </script>
+</body>
+</html>
